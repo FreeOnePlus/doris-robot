@@ -1,0 +1,43 @@
+# 注意：移除fastapi/uvicorn等web框架依赖 
+# 核心依赖
+python-dotenv>=1.0.0
+
+# 向量数据库
+pymilvus>=2.3.4
+
+# 大模型接口
+openai>=1.12.0
+
+# 数据处理
+numpy>=1.20.0
+scikit-learn>=1.0.0
+gensim>=4.0.0
+sentence-transformers==2.2.2
+torch>=2.0.0
+
+# 中文处理
+jieba>=0.42.1
+
+# 文档处理
+markdown>=3.4.3
+beautifulsoup4>=4.12.2
+
+# 网络请求
+httpx>=0.24.0
+
+# 环境管理
+python-dotenv==1.0.0
+
+# 日志管理
+loguru>=0.5.3
+
+# 生产环境可选（移除Prometheus依赖）
+gunicorn>=20.1.0
+uvloop>=0.16.0
+
+# 新增缓存依赖
+fastapi-cache2==0.2.0
+
+# 新增依赖
+aiohttp~=3.9.0
+tenacity~=8.2.3 

@@ -1,0 +1,49 @@
+{
+  "collection_name": "doris_docs",
+  "timeout": 60,
+  "max_question_length": 500,
+  "sensitivity_check": true,
+  "wechat": {
+    "enable": true,
+    "trigger_prefix": "",
+    "admin_users": ["user1"],
+    "rate_limit": 5
+  },
+  "model_config": {
+    "chat_model": "deepseek-chat",
+    "embedding_model": "Pro/BAAI/bge-m3",
+    "generation_model": "deepseek-ai/DeepSeek-V3",
+    "moderation_model": "deepseek-moderation",
+    "services": {
+      "chat": {
+        "provider": "deepseek",
+        "endpoint": "https://api.deepseek.com/v1"
+      },
+      "embedding": {
+        "provider": "siliconflow",
+        "endpoint": "https://api.siliconflow.cn/v1"
+      },
+      "moderation": {
+        "provider": "deepseek",
+        "endpoint": "https://api.deepseek.com/v1"
+      }
+    },
+    "providers": {
+      "deepseek": {
+        "api_key": "sk-xxx"
+      },
+      "siliconflow": {
+        "api_key": "sk-yyy"
+      }
+    }
+  },
+  "milvus": {
+    "host": "milvus_host",
+    "port": 19530
+  },
+  "api_keys": {
+    "deepseek": "sk",
+    "siliconflow": "sk"
+  },
+  "docs_path": "docs_path"
+} 

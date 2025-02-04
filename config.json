@@ -1,0 +1,48 @@
+{
+  "collection_name": "doris_docs",
+  "log_level": "INFO",
+  "timeout": 60,
+  "max_question_length": 500,
+  "sensitivity_check": true,
+  "wechat": {
+    "enable": true,
+    "trigger_prefix": "",
+    "admin_users": ["user1"],
+    "rate_limit": 5
+  },
+  "model_config": {
+    "services": {
+      "chat": {
+        "provider": "deepseek",
+        "model": "deepseek-chat"
+      },
+      "generation": {
+        "provider": "siliconflow",
+        "model": "deepseek-ai/DeepSeek-V3"
+      },
+      "embedding": {
+        "provider": "siliconflow",
+        "model": "Pro/BAAI/bge-m3"
+      },
+      "moderation": {
+        "provider": "deepseek",
+        "model": "deepseek-chat"
+      }
+    },
+    "providers": {
+      "deepseek": {
+        "api_key": "sk-93bb8859ab49406aa55e6ef4a4de9f5a",
+        "endpoint": "https://api.deepseek.com/v1"
+      },
+      "siliconflow": {
+        "api_key": "sk-acnznlkwdhbqbcijbosbzbbqrugbkyygaumptnlyugomgudn",
+        "endpoint": "https://api.siliconflow.cn/v1"
+      }
+    }
+  },
+  "milvus": {
+    "host": "www.freeoneplus.com",
+    "port": 19530
+  },
+  "docs_path": "/Users/suyijia/Documents/code/doris-website"
+} 
