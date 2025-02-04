@@ -31,18 +31,18 @@
     },
     "providers": {
       "deepseek": {
-        "api_key": "sk-93bb8859ab49406aa55e6ef4a4de9f5a",
+        "api_key": "",
         "endpoint": "https://api.deepseek.com/v1"
       },
       "siliconflow": {
-        "api_key": "sk-acnznlkwdhbqbcijbosbzbbqrugbkyygaumptnlyugomgudn",
+        "api_key": "",
         "endpoint": "https://api.siliconflow.cn/v1"
       }
     }
   },
   "milvus": {
-    "host": "www.freeoneplus.com",
+    "host": "milvus_host",
     "port": 19530
   },
-  "docs_path": "/Users/suyijia/Documents/code/doris-website"
+  "docs_path": "docs_path"
 } 

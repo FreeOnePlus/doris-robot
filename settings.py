@@ -37,17 +37,17 @@ LOGGING_CONFIG = {
 load_dotenv()
 
 # Milvus配置
-MILVUS_HOST = "www.freeoneplus.com"  # 确保这是正确的内网地址
+MILVUS_HOST = "milvus_host"  # 确保这是正确的内网地址
 MILVUS_PORT = 19530  # 确认端口开放
 
 # DeepSeek配置
-DEEPSEEK_API_KEY = "sk-93bb8859ab49406aa55e6ef4a4de9f5a"
+DEEPSEEK_API_KEY = "sk-xxx"
 
 # SiliconFlow配置
-SILICONFLOW_API_KEY = "sk-acnznlkwdhbqbcijbosbzbbqrugbkyygaumptnlyugomgudn"  
+SILICONFLOW_API_KEY = "sk-yyy"  
 
 # 文档路径配置
-DORIS_DOCS_PATH = "/Users/suyijia/Documents/code/doris-website"  # 本地clone的文档路径
+DORIS_DOCS_PATH = "docs_path"  # 本地clone的文档路径
 JIRA_DATA_PATH = "./jira_data"    # Jira数据存放路径
 
 # 向量维度配置
@@ -75,13 +75,6 @@ MODERATION_CONFIG = {
 
 # 新增嵌入模型配置
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-
-# 文档路径配置
-DORIS_DOCS_PATH = "/Users/suyijia/Documents/code/doris-website"  # 本地clone的文档路径
-JIRA_DATA_PATH = "./jira_data"    # Jira数据存放路径
-
-# 向量维度配置
-VECTOR_DIMENSION = 1024 
 
 SUPPORTED_EMBEDDING_MODELS = {
     'Pro/BAAI/bge-m3': {'dim': 1024},  

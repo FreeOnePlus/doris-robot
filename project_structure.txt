@@ -1,34 +1,29 @@
 project_root/
 ├── config/
-│   ├── __init__.py        # 新增空文件
-│   └── settings.py         # 主配置模块
-│   ├── config.json        # 服务配置文件
-│   └── config.json.template # 配置模板
-├── docs/                   # 文档资源
-│   └── plugin_guide.md     # 插件使用指南
-├── src/
 │   ├── __init__.py
-│   ├── api/                # 保留API模块（兼容旧系统）
-│   ├── data_loader/        # 数据加载模块
-│   │   ├── __init__.py
-│   │   ├── doris_loader.py # 处理Doris文档
-│   │   └── jira_loader.py  # 处理Jira数据
-│   ├── vectorstore/        # 向量存储模块
-│   │   ├── __init__.py
-│   │   └── milvus_store.py
-│   ├── qa/                 # 问答模块
-│   │   ├── __init__.py
-│   │   └── rag_engine.py   # 核心问答引擎
-│   ├── plugin/             # 插件核心模块
-│   │   ├── __init__.py
-│   │   ├── adapter.py     # 平台适配器
-│   │   └── doris_plugin.py # 插件主逻辑
-│   └── utils/              # 工具类
+│   ├── settings.py         # 应用核心配置
+│   ├── config.json         # 服务连接配置
+│   └── config.json.template
+├── src/
+│   ├── api/
+│   │   └── server.py       # FastAPI服务入口
+│   ├── data_loader/
+│   │   ├── doris_loader.py # Doris文档处理器
+│   │   └── jira_loader.py  # Jira数据加载器
+│   ├── vectorstore/
+│   │   └── milvus_store.py # Milvus操作实现
+│   ├── qa/
+│   │   ├── rag_engine.py   # RAG核心逻辑
+│   │   └── moderation.py   # 内容审核模块
+│   ├── plugin/
+│   │   ├── adapter.py      # 平台适配器
+│   │   └── handlers.py     # 消息处理器
+│   └── utils/
 │       ├── file_parser.py  # 文档解析工具
 │       └── logger.py       # 日志配置
-├── tests/                  # 单元测试
-├── plugins/                # 微信插件专属目录
-│   ├── __init__.py
-│   └── config.json         # 插件配置文件
+├── tests/
+├── plugins/
+│   └── wechat/
+│       └── config.json     # 微信插件配置
 ├── requirements.txt
-└── main.py                 # 主入口（兼容模式） 
+└── main.py                  # 主入口
