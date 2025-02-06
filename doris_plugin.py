@@ -57,7 +57,7 @@ class DorisPlugin(Plugin):
 
     def _init_services(self):
         self.rag_engine = RAGEngine()
-        self.moderation = ModerationService(self.config)
+        self.moderation = ModerationService()
 
     def handle_query(self, e_context: EventContext):
         """消息处理入口"""

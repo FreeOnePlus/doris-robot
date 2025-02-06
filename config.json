@@ -1,6 +1,5 @@
 {
   "collection_name": "doris_docs",
-  "log_level": "INFO",
   "timeout": 60,
   "max_question_length": 500,
   "sensitivity_check": true,
@@ -14,35 +13,62 @@
     "services": {
       "chat": {
         "provider": "deepseek",
-        "model": "deepseek-chat"
+        "model": "deepseek-chat",
+        "temperature": 0.2
       },
       "generation": {
         "provider": "siliconflow",
-        "model": "deepseek-ai/DeepSeek-V3"
+        "model": "deepseek-ai/DeepSeek-V3",
+        "temperature": 0.2
       },
       "embedding": {
         "provider": "siliconflow",
-        "model": "Pro/BAAI/bge-m3"
+        "model": "BAAI/bge-m3",
+        "temperature": 0.2
       },
       "moderation": {
         "provider": "deepseek",
-        "model": "deepseek-chat"
+        "model": "deepseek-chat",
+        "temperature": 0.2,
+        "max_tokens": 800
       }
     },
     "providers": {
       "deepseek": {
-        "api_key": "",
+        "api_key": "sk-93bb8859ab49406aa55e6ef4a4de9f5a",
         "endpoint": "https://api.deepseek.com/v1"
       },
       "siliconflow": {
-        "api_key": "",
+        "api_key": "sk-acnznlkwdhbqbcijbosbzbbqrugbkyygaumptnlyugomgudn",
         "endpoint": "https://api.siliconflow.cn/v1"
       }
     }
   },
   "milvus": {
-    "host": "milvus_host",
+    "host": "192.168.31.83",
     "port": 19530
   },
-  "docs_path": "docs_path"
+  "docs_path": "docs_path",
+  "data_paths": {
+    "doris_docs": "./doris_docs",
+    "jira_data": "./jira_data"
+  },
+  "search_config": {
+    "min_similarity": 0.65,
+    "version_weights": {
+      "3.0": 1.5,
+      "2.1": 1.3,
+      "2.0": 1.0
+    }
+  },
+  "moderation": {
+    "enable_keyword": true,
+    "keywords": ["doris", "数据库", "apache"],
+    "fallback_strategy": "allow"
+  },
+  "vector_dimension": 1024,
+  "logging_config": {
+    "level": "INFO",
+    "qa_debug": true
+  }
 } 

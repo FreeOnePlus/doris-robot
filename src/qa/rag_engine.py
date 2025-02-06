@@ -1,7 +1,7 @@
 import logging
 from ..vectorstore.milvus_store import MilvusStore
 import re
-from settings import DEEPSEEK_API_KEY, SILICONFLOW_API_KEY, load_config
+from settings import config
 from src.moderation.moderation_service import ModerationService
 from src.clients.llm_client import LLMClients
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -10,15 +10,25 @@ logger = logging.getLogger(__name__)
 
 class RAGEngine:
     def __init__(self):
-        self.config = load_config()
+        # 使用配置示例
+        self.min_similarity = config.get_min_similarity
+        self.version_weights = config.get_version_weights
+        self.enable_keyword = config.get_enable_keyword
+        
+        self.config = config
         self.clients = LLMClients()
         self.milvus_store = MilvusStore()
-        self.moderation_service = ModerationService(self.config)
+        self.moderation_service = ModerationService()
+        self.chat_model = config.get_chat_model
         logger.info("RAG引擎初始化成功")
 
     def _get_truncated_embedding(self, text):
         """处理文本截断并生成嵌入"""
         try:
+            # 添加详细日志
+            logger.debug(f"生成嵌入的文本长度: {len(text)}")
+            logger.debug(f"使用模型: {self.config.embedding_model}")
+            
             # 预处理文本，移除多余空白
             text = re.sub(r'\s+', ' ', text.strip())
             
@@ -30,13 +40,16 @@ class RAGEngine:
             
             # 生成嵌入
             response = self.clients.embedding.embeddings.create(
-                model=self.config["model_config"]["services"]["embedding"]["model"],
-                input=text
+                model=self.config.embedding_model,
+                input=text,
+                timeout=60.0  # 添加超时控制
             )
             return response.data[0].embedding
             
         except Exception as e:
-            logger.error(f"嵌入生成失败: {str(e)}")
+            logger.error(f"嵌入生成失败详情: {str(e)}")
+            logger.error(f"请求模型: {self.config.embedding_model}")
+            logger.error(f"服务端点: {self.clients.embedding.base_url}")
             raise
 
     def get_embedding(self, text):
@@ -154,21 +167,24 @@ class RAGEngine:
             
             # 使用 DeepSeek 生成回答
             messages = [
-                {"role": "system", "content": "你是一个专业的Apache Doris助手，请基于提供的上下文，尽可能用简洁和专业的语言来回答问题。"},
+                {"role": "system", "content": """你是一个专业的Apache Doris助手，你负责帮助用户解决技术问题。你可以访问产品文档，
+                 其中包含有关公司产品和服务的详细信息。你可以访问包含操作方法文章的内部知识库。你还可以访问用户经常寻求帮助的社区论坛。
+                 你可以使用来自这些来源的信息来帮助用户解决他们的问题。除非你确定自己对用户的问题有准确的答案，
+                 否则请使用 escalate_to_human 函数将问题上报给人工支持人员，并告知用户你无法帮助他们，已将问题转交给人工支持人员。
+                 如果你不确定，请不要编造答案。
+                 我帮你查询到的参考文档和用户的输入如下。你的目标是尽最大努力帮助用户实现他们的目标。"""},
                 {"role": "user", "content": f"""
-基于以下参考文档，尽可能用简洁和专业的语言回答用户问题。如果无法从参考文档中找到答案，请说明无法回答。
-
-参考文档:
-{context}
-
-用户问题: {query}
-"""}
+                 参考文档:
+                {context}
+                用户问题: 
+                {query}
+                """}
             ]
             
             response = self.clients.chat.chat.completions.create(
-                model=self.config["model_config"]["services"]["chat"]["model"],
+                model=self.chat_model,
                 messages=messages,
-                temperature=0.2,
+                temperature=config.get_chat_temperature,
                 max_tokens=800
             )
             
@@ -209,7 +225,7 @@ class RAGEngine:
                 {"role": "user", "content": f"问题：{query}"}
             ]
             response = self.clients.chat.chat.completions.create(
-                model=self.config["model_config"]["services"]["generation"]["model"],
+                model=self.config.get_generation_model,
                 messages=messages,
                 temperature=0.1,
                 max_tokens=1

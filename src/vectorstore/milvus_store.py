@@ -1,6 +1,6 @@
 import logging
 from pymilvus import connections, Collection, CollectionSchema, FieldSchema, DataType, utility
-from settings import MILVUS_HOST, MILVUS_PORT, VECTOR_DIMENSION
+from settings import config
 import re
 import jieba
 import time
@@ -10,12 +10,15 @@ logger = logging.getLogger(__name__)
 class MilvusStore:
     def __init__(self):
         try:
-            logger.info(f"连接Milvus服务器: {MILVUS_HOST}:{MILVUS_PORT}")
-            self.conn = connections.connect(
-                host=MILVUS_HOST,
-                port=MILVUS_PORT
-            )
             self.col = None
+            self.host = config.milvus_host
+            self.port = config.milvus_port
+            self.vector_dim = config.vector_dimension
+            logger.info(f"连接Milvus服务器: {self.host}:{self.port}")
+            self.conn = connections.connect(
+                host=self.host,
+                port=self.port
+            )
             logger.info("Milvus连接成功")
         except Exception as e:
             logger.error(f"连接Milvus服务器失败: {str(e)}")
@@ -42,7 +45,7 @@ class MilvusStore:
             fields = [
                 FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=64, is_primary=True),
                 FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65000),
-                FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=VECTOR_DIMENSION),
+                FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=self.vector_dim),
                 FieldSchema(name="version", dtype=DataType.VARCHAR, max_length=10),
                 FieldSchema(name="url", dtype=DataType.VARCHAR, max_length=1024),
                 FieldSchema(name="is_community", dtype=DataType.BOOL)

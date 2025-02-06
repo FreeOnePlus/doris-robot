@@ -1,9 +1,9 @@
 project_root/
 ├── config/
-│   ├── __init__.py
-│   ├── settings.py         # 应用核心配置
-│   ├── config.json         # 服务连接配置
-│   └── config.json.template
+│   └── __init__.py
+├── config.json         # 主配置文件
+├── config.json.template # 移动到根目录
+├── settings.py         # 配置管理模块
 ├── src/
 │   ├── api/
 │   │   └── server.py       # FastAPI服务入口

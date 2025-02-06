@@ -1,6 +1,6 @@
 import logging
 from openai import OpenAI
-from settings import DEEPSEEK_API_KEY, SILICONFLOW_API_KEY, load_config
+from settings import config
 
 logger = logging.getLogger(__name__)
 
@@ -9,28 +9,39 @@ class UnifiedLLMClient:
         self.config = config
         self.clients = {
             'deepseek': OpenAI(
-                api_key=config["api_keys"]["deepseek"],
-                base_url=config["model_config"]["endpoints"]["deepseek"]
+                api_key=config["model_config"]["providers"]["deepseek"]["api_key"],
+                base_url=config["model_config"]["providers"]["deepseek"]["endpoint"]
             ),
             'custom': OpenAI(
-                api_key=config["api_keys"]["custom_llm"],
-                base_url=config["model_config"]["endpoints"]["custom_llm"]
+                api_key=config["model_config"]["providers"]["custom_llm"]["api_key"],
+                base_url=config["model_config"]["providers"]["custom_llm"]["endpoint"]
+            ),
+            'siliconflow': OpenAI(
+                api_key=config["model_config"]["providers"]["siliconflow"]["api_key"],
+                base_url=config["model_config"]["providers"]["siliconflow"]["endpoint"]
             )
         }
 
     def get_client(self, model_name):
         if 'deepseek' in model_name:
             return self.clients['deepseek']
+        elif 'siliconflow' in model_name:
+            return self.clients['siliconflow']
         else:
             return self.clients['custom']
 
 class LLMClients:
     def __init__(self):
         """使用同步客户端"""
-        config = load_config()
-        self.chat = self._init_client(config, "chat")
-        self.moderation = self._init_client(config, "moderation")
-        self.embedding = self._init_client(config, "embedding")
+        self.config = config._config  # 直接使用全局配置实例
+        self.chat = OpenAI(
+            api_key=config.llm_api_key(provider="deepseek"),
+            base_url=config.llm_endpoint(provider="deepseek")
+        )
+        self.embedding = OpenAI(
+            api_key=config.llm_api_key(provider="siliconflow"),
+            base_url=config.llm_endpoint(provider="siliconflow")
+        )
 
     def _init_client(self, config, service_type):
         """初始化同步客户端"""

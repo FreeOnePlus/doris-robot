@@ -1,38 +1,37 @@
 import logging
 import settings
+from settings import config
 from openai import OpenAI  # 直接导入OpenAI客户端
 
 logger = logging.getLogger(__name__)
 
 class ModerationService:
-    def __init__(self, config=None):
-        if not config:
-            raise ValueError("必须提供配置参数")
-            
-        self.config = config
+    def __init__(self):
         self.client = self._init_client()
-        self.keywords = settings.DORIS_KEYWORDS
-        self.model_name = settings.MODERATION_MODEL
-        self.temperature = settings.MODERATION_TEMP
+        self.keywords = config.moderation_keywords
+        self.model_name = config.moderation_model
+        self.temperature = config.moderation_temperature
+        self.max_tokens = config.moderation_max_tokens
 
     def _init_client(self):
-        provider = self.config["model_config"]["services"]["moderation"]["provider"]
+        from openai import OpenAI
+        provider = config.moderation_provider
         return OpenAI(
-            api_key=self.config["model_config"]["providers"][provider]["api_key"],
-            base_url=self.config["model_config"]["providers"][provider]["endpoint"]
+            api_key=config.llm_api_key(provider=provider),
+            base_url=config.llm_endpoint(provider=provider)
         )
 
     def check_relevance(self, query: str) -> bool:
         """审核查询相关性"""
         logger.info(f"开始审核问题: {query}")
         
-        if settings.MODERATION_CONFIG["enable_keyword"] and self._keyword_check(query):
+        if config.get_enable_keyword and self._keyword_check(query):
             return True
         
-        if settings.MODERATION_CONFIG["enable_model_check"]:
+        if config.get_enable_model_check:
             return self._model_check(query)
         
-        return settings.MODERATION_CONFIG["fallback_strategy"] == "allow"
+        return config.get_fallback_strategy == "allow"
 
     def _keyword_check(self, query: str) -> bool:
         """关键词匹配审核"""

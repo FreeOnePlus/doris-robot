@@ -36,99 +36,136 @@ LOGGING_CONFIG = {
 
 load_dotenv()
 
-# Milvus配置
-MILVUS_HOST = "milvus_host"  # 确保这是正确的内网地址
-MILVUS_PORT = 19530  # 确认端口开放
-
-# DeepSeek配置
-DEEPSEEK_API_KEY = "sk-xxx"
-
-# SiliconFlow配置
-SILICONFLOW_API_KEY = "sk-yyy"  
-
-# 文档路径配置
-DORIS_DOCS_PATH = "docs_path"  # 本地clone的文档路径
-JIRA_DATA_PATH = "./jira_data"    # Jira数据存放路径
-
-# 向量维度配置
-VECTOR_DIMENSION = 1024  # bge-large-zh-v1.5的维度
-
-# 关键词配置
-DORIS_KEYWORDS = [
-    "doris", "数据库", "apache", 
-    "查询", "表", "分区", 
-    "分桶", "物化视图", "rollup",
-    "bitmap", "olap", "broker"
-]
-
-# 审核模型配置
-MODERATION_MODEL = "deepseek-chat"  # 可切换为其他轻量级模型
-MODERATION_TEMP = 0.1
-
-# 审核配置增强
-MODERATION_CONFIG = {
-    "enable_keyword": True,
-    "enable_model_check": True,
-    "fallback_strategy": "allow",  # allow/deny
-    "timeout": 5.0  # 模型调用超时时间
-}
-
-# 新增嵌入模型配置
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-
-SUPPORTED_EMBEDDING_MODELS = {
-    'Pro/BAAI/bge-m3': {'dim': 1024},  
-    'Pro/BAAI/bge-base-zh-v1.5': {'dim': 768},
-    'text-embedding-3-small': {'dim': 1536},  # 保留原有配置
-    'text-embedding-3-large': {'dim': 3072}
-} 
-
-# 新增搜索配置
-SEARCH_CONFIG = {
-    "min_similarity": 0.65,  # 最低相似度阈值
-    "version_weights": {
-        "3.0": 1.5,
-        "2.1": 1.3,
-        "2.0": 1.0,
-        "dev": 0.7
-    },
-    "diversity_ratio": 0.3  # 多样性保留比例
-} 
-
-DEFAULT_MODEL_CONFIG = {
-    "chat_model": "deepseek-chat",
-    "embedding_model": "Pro/BAAI/bge-m3",
-    "generation_model": "deepseek-ai/DeepSeek-V3", 
-    "moderation_model": "deepseek-moderation"
-}
-
-def load_config():
-    logger.info("=== 开始加载配置 ===")
-    config_path = Path(__file__).parent / "config.json"
-    logger.debug("配置文件路径: %s", config_path)
+class ConfigManager:
+    """统一配置管理类"""
+    def __init__(self):
+        self._config = {}
+        self._load_config()
     
-    # 打印路径详细信息
-    logger.debug("当前工作目录: %s", Path.cwd())
-    logger.debug("配置文件绝对路径: %s", config_path.absolute())
+    def _load_config(self):
+        """加载配置文件"""
+        self.config_path = Path(__file__).parent / "config.json"
+        
+        if not self.config_path.exists():
+            raise FileNotFoundError(f"Missing config file: {self.config_path}")
+        
+        with open(self.config_path) as f:
+            self._config = json.load(f)
     
-    if not config_path.exists():
-        logger.error("配置文件不存在！搜索路径：%s", config_path)
-        logger.error("当前目录内容：%s", list(Path.cwd().iterdir()))
-        raise FileNotFoundError(f"找不到配置文件: {config_path}")
+    @property
+    def milvus_host(self) -> str:
+        return self._config["milvus"]["host"]
     
-    logger.info("找到配置文件，开始解析...")
-    try:
-        with open(config_path) as f:
-            config = json.load(f)
-            logger.debug("配置内容预览: %s", str(config)[:200] + "...")  # 防止泄露敏感信息
-        return config
-    except Exception as e:
-        logger.exception("配置文件解析失败！")
-        raise
+    @property
+    def milvus_port(self) -> int:
+        return self._config["milvus"]["port"]
+    
+    @property
+    def vector_dimension(self) -> int:
+        return self._config["vector_dimension"]
+    
+    @property
+    def doris_docs_path(self) -> Path:
+        return Path(self._config["data_paths"]["doris_docs"])
+    
+    @property
+    def jira_docs_path(self) -> Path:
+        return Path(self._config["data_paths"]["jira_docs"])
+    
+    @property
+    def embedding_model(self) -> str:
+        return self._config["model_config"]["services"]["embedding"]["model"]
+    
+    @property
+    def moderation_keywords(self) -> list:
+        return self._config["moderation"]["keywords"]
+    
+    @property
+    def logging_level(self) -> str:
+        return self._config["logging_config"]["level"]
+    
+    @property
+    def moderation_model(self) -> str:
+        return self._config["model_config"]["services"]["moderation"]["model"]
+    
+    @property
+    def moderation_config(self) -> dict:
+        return self._config["moderation"]
+    
+    @property
+    def moderation_temperature(self) -> float:
+        return self._config["model_config"]["services"]["moderation"]["temperature"]
+    
+    @property
+    def moderation_max_tokens(self) -> int:
+        return self._config["model_config"]["services"]["moderation"]["max_tokens"]
+    
+    @property
+    def moderation_provider(self) -> str:
+        return self._config["model_config"]["services"]["moderation"]["provider"]
+    
+    def llm_endpoint(self, provider: str) -> str:
+        return self._config["model_config"]["providers"][provider]["endpoint"]
+    
+    def llm_api_key(self, provider: str) -> str:
+        return self._config["model_config"]["providers"][provider]["api_key"]
+    
+    @property
+    def get_enable_keyword(self) -> bool:
+        return self._config["moderation"]["enable_keyword"]
+    
+    @property
+    def get_enable_model_check(self) -> bool:
+        return self._config["moderation"]["enable_model_check"]
+    
+    @property
+    def get_fallback_strategy(self) -> str:
+        return self._config["moderation"]["fallback_strategy"]
+    
+    @property
+    def get_min_similarity(self) -> float:
+        return self._config["search_config"]["min_similarity"]
+    
+    @property
+    def get_version_weights(self) -> dict:
+        return self._config["search_config"]["version_weights"]
+    
+    @property
+    def get_chat_model(self) -> str:
+        return self._config["model_config"]["services"]["chat"]["model"]
+    
+    @property
+    def get_generation_model(self) -> str:
+        return self._config["model_config"]["services"]["generation"]["model"]
+    
+    @property
+    def get_chat_temperature(self) -> float:
+        return self._config["model_config"]["services"]["chat"]["temperature"]
+    
+    @property
+    def get_generation_temperature(self) -> float:
+        return self._config["model_config"]["services"]["generation"]["temperature"]
+    
+    @property
+    def get_chat_max_tokens(self) -> int:
+        return self._config["model_config"]["services"]["chat"]["max_tokens"]
+    
+    def __getattr__(self, name):
+        """通用访问方法"""
+        return self._config.get(name)
+
+# 全局配置实例
+config = ConfigManager()
+
+# 初始化日志配置（从配置文件读取）
+logging.basicConfig(
+    level=config.logging_level,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 
 class Settings:
     def __init__(self):
-        self.data = load_config()
+        self.data = config._config
         
     def __getattr__(self, name):
         return self.data.get(name) 

@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.data_loader.doris_loader import DorisLoader
 from src.vectorstore.milvus_store import MilvusStore
 from src.qa.rag_engine import RAGEngine
-from settings import DORIS_DOCS_PATH
+from settings import config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ async def process_documents():
     """处理文档：加载、向量化和存储"""
     try:
         logger.info("初始化组件")
-        doris_loader = DorisLoader(DORIS_DOCS_PATH)
+        doris_loader = DorisLoader(config.doris_docs_path)
         milvus_store = MilvusStore()
         rag_engine = RAGEngine()
         

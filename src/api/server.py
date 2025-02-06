@@ -40,7 +40,7 @@ def create_app():
     collection_name = "doris_docs"
 
     # 独立初始化审核服务（使用配置）
-    moderation = ModerationService(rag_engine.config)
+    moderation = ModerationService()
     
     # 注册依赖项
     app.dependency_overrides.update({
