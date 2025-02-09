@@ -1,5 +1,5 @@
 {
-  "collection_name": "doris_docs",
+  "collection_name": "doris_docs_test",
   "timeout": 60,
   "max_question_length": 500,
   "sensitivity_check": true,
@@ -23,7 +23,7 @@
       },
       "embedding": {
         "provider": "siliconflow",
-        "model": "BAAI/bge-m3",
+        "model": "Pro/BAAI/bge-m3",
         "temperature": 0.2
       },
       "moderation": {
@@ -45,13 +45,14 @@
     }
   },
   "milvus": {
-    "host": "192.168.31.83",
+    "host": "www.freeoneplus.com",
     "port": 19530
   },
   "docs_path": "docs_path",
   "data_paths": {
     "doris_docs": "./doris_docs",
-    "jira_data": "./jira_data"
+    "jira_data": "./jira_data",
+    "jira_attachments": "./jira_attachments"
   },
   "search_config": {
     "min_similarity": 0.65,
@@ -64,11 +65,17 @@
   "moderation": {
     "enable_keyword": true,
     "keywords": ["doris", "数据库", "apache"],
+    "enable_model_check": true,
     "fallback_strategy": "allow"
   },
   "vector_dimension": 1024,
   "logging_config": {
     "level": "INFO",
     "qa_debug": true
+  },
+  "jira": {
+    "base_url": "http://jira.selectdb-in.cc",
+    "filter_id": "10813",
+    "auth_token": "bGltaW5nOjgyZkVXQlh0YmZpdA=="
   }
 } 

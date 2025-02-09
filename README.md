@@ -41,7 +41,6 @@ project_root/
 ### 安装依赖
 ```bash
 pip install -r requirements.txt
-pip install fop-wechat>=1.2.0  # 微信插件依赖
 ```
 
 ### 配置说明

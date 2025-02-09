@@ -4,9 +4,6 @@ from src.qa.rag_engine import RAGEngine
 import logging
 import uvicorn
 import logging.handlers
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.inmemory import InMemoryBackend
-from fastapi_cache.decorator import cache
 from src.moderation import ModerationService
 
 logger = logging.getLogger(__name__)

@@ -34,22 +34,19 @@ LOGGING_CONFIG = {
     }
 }
 
-load_dotenv()
-
 class ConfigManager:
     """统一配置管理类"""
     def __init__(self):
-        self._config = {}
         self._load_config()
+        self._validate_config()
     
     def _load_config(self):
-        """加载配置文件"""
-        self.config_path = Path(__file__).parent / "config.json"
+        """从config.json加载配置"""
+        config_path = Path(__file__).parent / "config.json"
+        if not config_path.exists():
+            raise FileNotFoundError(f"Missing config file: {config_path}")
         
-        if not self.config_path.exists():
-            raise FileNotFoundError(f"Missing config file: {self.config_path}")
-        
-        with open(self.config_path) as f:
+        with open(config_path) as f:
             self._config = json.load(f)
     
     @property
@@ -150,9 +147,33 @@ class ConfigManager:
     def get_chat_max_tokens(self) -> int:
         return self._config["model_config"]["services"]["chat"]["max_tokens"]
     
+    @property
+    def jira_config(self) -> dict:
+        """获取Jira相关配置"""
+        return {
+            "jira": self._config["jira"],
+            "data_paths": self._config["data_paths"]
+        }
+    
     def __getattr__(self, name):
         """通用访问方法"""
         return self._config.get(name)
+
+    def _validate_config(self):
+        required = [
+            'jira.base_url',
+            'jira.auth_token',
+            'milvus.host',
+            'milvus.port',
+            'data_paths.jira_data',
+            'vector_dimension'
+        ]
+        for key in required:
+            current = self._config
+            for part in key.split('.'):
+                if part not in current:
+                    raise ValueError(f"缺少必要配置项: {key}")
+                current = current[part]
 
 # 全局配置实例
 config = ConfigManager()

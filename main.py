@@ -2,8 +2,10 @@ import logging
 import sys
 import asyncio
 import os
+import argparse
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from src.data_loader.doris_loader import DorisLoader
+from src.data_loader.jira_loader import JiraLoader
 from src.vectorstore.milvus_store import MilvusStore
 from src.qa.rag_engine import RAGEngine
 from settings import config
@@ -88,29 +90,41 @@ def start_api():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 def main():
-    if len(sys.argv) < 2:
-        print("请指定操作: process | test | api")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='Doris智能问答系统',
+                                    formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('command', choices=['process', 'test', 'api', 'jira_sync'], 
+                         help='''可执行的操作:
+process - 处理文档数据
+test    - 运行测试
+api     - 启动API服务
+jira_sync - 同步Jira数据（使用--full进行全量刷新）''')
+    parser.add_argument('--full', action='store_true', help='全量刷新模式')
+    args = parser.parse_args()
+
+    if args.command == 'process':
+        asyncio.run(process_documents())
+    elif args.command == 'test':
+        test_qa()
+    elif args.command == 'api':
+        start_api()
+    elif args.command == 'jira_sync':
+        milvus = MilvusStore()
+        loader = JiraLoader(config.jira_config)
         
-    command = sys.argv[1]
-    
-    try:
-        logger.info("程序启动")
-        
-        if command == "process":
-            asyncio.run(process_documents())
-        elif command == "test":
-            test_qa()
-        elif command == "api":
-            start_api()
+        if args.full:
+            print("开始全量刷新Jira数据...")
+            milvus.create_jira_collection()
         else:
-            print("无效命令")
-            sys.exit(1)
+            print("开始增量刷新Jira数据...")
             
-        logger.info("程序运行完成")
-        
-    except Exception as e:
-        logger.error(f"程序执行失败: {str(e)}", exc_info=True)
+        count = 0
+        for doc in loader.load_documents(full_refresh=args.full):
+            milvus.upsert("jira_issues", doc)
+            count += 1
+            
+        print(f"刷新完成，共处理{count}条数据")
+    else:
+        print("无效命令")
         sys.exit(1)
 
 if __name__ == "__main__":

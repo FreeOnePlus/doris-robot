@@ -1,9 +1,9 @@
 # 注意：移除fastapi/uvicorn等web框架依赖 
 # 核心依赖
-python-dotenv>=1.0.0
+python-dotenv>=0.19.0
 
 # 向量数据库
-pymilvus>=2.3.4
+pymilvus>=2.3.0
 
 # 大模型接口
 openai>=1.12.0
@@ -40,4 +40,26 @@ fastapi-cache2==0.2.0
 
 # 新增依赖
 aiohttp~=3.9.0
-tenacity~=8.2.3 
+tenacity~=8.2.3
+
+# 新增PDF处理依赖
+pdfplumber>=0.10.0
+pandas>=2.0.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
+
+# 新增FastAPI依赖
+fastapi>=0.68.0
+uvicorn>=0.15.0
+
+# 新增请求依赖
+requests>=2.25.1
+
+# 新增多部分表单依赖
+python-multipart>=0.0.5
+
+# 新增调度依赖
+schedule>=1.1.0
+
+# 新增Pydantic依赖
+pydantic>=2.0 

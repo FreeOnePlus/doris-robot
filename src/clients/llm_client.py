@@ -38,10 +38,14 @@ class LLMClients:
             api_key=config.llm_api_key(provider="deepseek"),
             base_url=config.llm_endpoint(provider="deepseek")
         )
+        # 获取嵌入服务配置
+        embedding_provider = config.model_config["services"]["embedding"]["provider"]
+        
         self.embedding = OpenAI(
-            api_key=config.llm_api_key(provider="siliconflow"),
-            base_url=config.llm_endpoint(provider="siliconflow")
+            api_key=config.llm_api_key(provider=embedding_provider),
+            base_url=config.llm_endpoint(provider=embedding_provider)
         )
+        logger.info(f"初始化嵌入客户端: {embedding_provider}")
 
     def _init_client(self, config, service_type):
         """初始化同步客户端"""

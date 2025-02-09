@@ -401,4 +401,49 @@ class MilvusStore:
             
         except Exception as e:
             logger.error(f"数据插入失败: {str(e)}")
+            raise
+
+    def create_jira_collection(self):
+        """创建专用的Jira集合（带自定义schema）"""
+        fields = [
+            FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=64, is_primary=True),
+            FieldSchema(name="text", dtype=DataType.VARCHAR, max_length=65000),
+            FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=self.vector_dim),
+            FieldSchema(name="status", dtype=DataType.VARCHAR, max_length=20),
+            FieldSchema(name="priority", dtype=DataType.VARCHAR, max_length=20),
+            FieldSchema(name="version", dtype=DataType.VARCHAR, max_length=20),
+            FieldSchema(name="created", dtype=DataType.INT64),
+        ]
+        
+        schema = CollectionSchema(fields=fields, description="Jira Issues Collection")
+        collection = Collection(name="jira_issues", schema=schema)
+        
+        # 创建优化索引
+        index_params = {
+            "metric_type": "L2",
+            "index_type": "HNSW",
+            "params": {"M": 16, "efConstruction": 200}
+        }
+        collection.create_index(field_name="vector", index_params=index_params)
+        return collection
+
+    def search_jira(self, query_vector, limit=5):
+        """Jira专用搜索"""
+        return self.search("jira_issues", query_vector, limit)
+
+    def upsert(self, collection_name: str, data: dict):
+        """更新或插入数据"""
+        try:
+            # 构建查询表达式
+            expr = f"id == '{data['id']}'"
+            
+            # 先尝试删除已存在记录
+            self.col = Collection(collection_name)
+            self.col.delete(expr)
+            
+            # 插入新数据
+            return self.insert(collection_name, data)
+            
+        except Exception as e:
+            logger.error(f"数据更新失败: {str(e)}")
             raise 
