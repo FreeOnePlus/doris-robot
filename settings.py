@@ -70,6 +70,14 @@ class ConfigManager:
         return Path(self._config["data_paths"]["jira_docs"])
     
     @property
+    def chat_provider(self) -> str:
+        return self._config["model_config"]["services"]["chat"]["provider"]
+    
+    @property
+    def embedding_provider(self) -> str:
+        return self._config["model_config"]["services"]["embedding"]["provider"]
+    
+    @property
     def embedding_model(self) -> str:
         return self._config["model_config"]["services"]["embedding"]["model"]
     

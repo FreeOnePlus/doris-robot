@@ -1,7 +1,6 @@
 import logging
 from openai import OpenAI
 from settings import config
-
 logger = logging.getLogger(__name__)
 
 class UnifiedLLMClient:
@@ -9,16 +8,16 @@ class UnifiedLLMClient:
         self.config = config
         self.clients = {
             'deepseek': OpenAI(
-                api_key=config["model_config"]["providers"]["deepseek"]["api_key"],
-                base_url=config["model_config"]["providers"]["deepseek"]["endpoint"]
+                api_key=config.llm_api_key(provider="deepseek"),
+                base_url=config.llm_endpoint(provider="deepseek")
             ),
             'custom': OpenAI(
-                api_key=config["model_config"]["providers"]["custom_llm"]["api_key"],
-                base_url=config["model_config"]["providers"]["custom_llm"]["endpoint"]
+                api_key=config.llm_api_key(provider="custom_llm"),
+                base_url=config.llm_endpoint(provider="custom_llm")
             ),
             'siliconflow': OpenAI(
-                api_key=config["model_config"]["providers"]["siliconflow"]["api_key"],
-                base_url=config["model_config"]["providers"]["siliconflow"]["endpoint"]
+                api_key=config.llm_api_key(provider="siliconflow"),
+                base_url=config.llm_endpoint(provider="siliconflow")
             )
         }
 
@@ -35,11 +34,11 @@ class LLMClients:
         """使用同步客户端"""
         self.config = config._config  # 直接使用全局配置实例
         self.chat = OpenAI(
-            api_key=config.llm_api_key(provider="deepseek"),
-            base_url=config.llm_endpoint(provider="deepseek")
+            api_key=config.llm_api_key(provider=config.chat_provider),
+            base_url=config.llm_endpoint(provider=config.chat_provider)
         )
         # 获取嵌入服务配置
-        embedding_provider = config.model_config["services"]["embedding"]["provider"]
+        embedding_provider = config.embedding_provider
         
         self.embedding = OpenAI(
             api_key=config.llm_api_key(provider=embedding_provider),
@@ -53,6 +52,6 @@ class LLMClients:
         provider = config["model_config"]["services"][service_type]["provider"]
         logger.info(f"初始化同步客户端: {provider}")
         return OpenAI(
-            api_key=config["model_config"]["providers"][provider]["api_key"],
-            base_url=config["model_config"]["providers"][provider]["endpoint"]
+            api_key=config.llm_api_key(provider=provider),
+            base_url=config.llm_endpoint(provider=provider)
         ) 

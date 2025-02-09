@@ -1,5 +1,5 @@
 {
-  "collection_name": "doris_docs_test",
+  "collection_name": "${DORIS_COLLECTION_NAME}",
   "timeout": 60,
   "max_question_length": 500,
   "sensitivity_check": true,
@@ -35,20 +35,20 @@
     },
     "providers": {
       "deepseek": {
-        "api_key": "sk-93bb8859ab49406aa55e6ef4a4de9f5a",
+        "api_key": "${DEEPSEEK_API_KEY}",
         "endpoint": "https://api.deepseek.com/v1"
       },
       "siliconflow": {
-        "api_key": "sk-acnznlkwdhbqbcijbosbzbbqrugbkyygaumptnlyugomgudn",
+        "api_key": "${SILICONFLOW_API_KEY}",
         "endpoint": "https://api.siliconflow.cn/v1"
       }
     }
   },
   "milvus": {
-    "host": "www.freeoneplus.com",
-    "port": 19530
+    "host": "${MILVUS_HOST}",
+    "port": ${MILVUS_PORT}
   },
-  "docs_path": "docs_path",
+  "docs_path": "${DOCS_PATH}",
   "data_paths": {
     "doris_docs": "./doris_docs",
     "jira_data": "./jira_data",
