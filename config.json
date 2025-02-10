@@ -74,8 +74,8 @@
     "qa_debug": true
   },
   "jira": {
-    "base_url": "http://jira.selectdb-in.cc",
-    "filter_id": "10813",
-    "auth_token": "bGltaW5nOjgyZkVXQlh0YmZpdA=="
+    "base_url": "${JIRA_BASE_URL}",
+    "filter_id": "${JIRA_FILTER_ID}",
+    "auth_token": "${JIRA_AUTH_TOKEN}"
   }
 } 
