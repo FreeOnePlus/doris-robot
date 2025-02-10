@@ -58,19 +58,10 @@ schedule>=1.1.0
 pydantic>=2.0
 
 # 新增可选依赖组
-[local-embeddings]
-sentence-transformers==2.2.2
-torch>=2.0.0
-gensim>=4.0.0
+local-embeddings:
+  sentence-transformers==2.2.2
+  torch>=2.0.0
+  gensim>=4.0.0
 
-[cloud]
-openai>=1.12.0
-
-# 仅安装基础依赖
-pip install -r requirements.txt
-
-# 需要本地嵌入支持
-pip install -r requirements.txt[local-embeddings]
-
-# 使用云服务
-pip install -r requirements.txt[cloud] 
+cloud:
+  openai>=1.12.0
