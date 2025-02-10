@@ -2,7 +2,7 @@ version: '3.8'
 services:
   robot:
     container_name: doris-robot
-    image: freeoneplus/doris-robot:1.0.0
+    image: freeoneplus/doris-robot:0.1.0
     ports:
       - "8000:8000"
     environment:
