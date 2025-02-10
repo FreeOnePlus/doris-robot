@@ -48,9 +48,8 @@
     "host": "${MILVUS_HOST}",
     "port": ${MILVUS_PORT}
   },
-  "docs_path": "${DOCS_PATH}",
   "data_paths": {
-    "doris_docs": "./doris_docs",
+    "doris_docs": "${DOCS_PATH}",
     "jira_data": "./jira_data",
     "jira_attachments": "./jira_attachments"
   },
