@@ -49,9 +49,9 @@
     "port": ${MILVUS_PORT}
   },
   "data_paths": {
-    "doris_docs": "${DOCS_PATH}",
-    "jira_data": "./jira_data",
-    "jira_attachments": "./jira_attachments"
+    "doris_docs": "/opt/doris-website",
+    "jira_data": "/opt/jira_data",
+    "jira_attachments": "/opt/jira_attachments"
   },
   "search_config": {
     "min_similarity": 0.65,

@@ -6,9 +6,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
       - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
-      - DORIS_DOCS_PATH=${DORIS_DOCS_PATH}
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/${DOCS_PATH}:/opt/doris-website
     depends_on:
       - "etcd"
       - "minio"

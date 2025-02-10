@@ -7,9 +7,7 @@ export DORIS_COLLECTION_NAME=${DORIS_COLLECTION_NAME:-doris_docs}
 
 # 检查必需变量
 required_vars=(
-  DEEPSEEK_API_KEY
   SILICONFLOW_API_KEY
-  DOCS_PATH
 )
 
 for var in "${required_vars[@]}"; do
@@ -38,7 +36,6 @@ replace_keys=(
   DORIS_COLLECTION_NAME
   DEEPSEEK_API_KEY
   SILICONFLOW_API_KEY
-  DOCS_PATH
 )
 
 for key in "${replace_keys[@]}"; do

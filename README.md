@@ -1,8 +1,53 @@
-# Doris智能问答机器人
+# Doris 智能问答系统
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+基于RAG架构的Doris文档智能问答解决方案，支持多版本文档检索和智能问答。
 
-基于RAG架构的Apache Doris知识库问答系统，提供智能文档检索和问答服务。
+## 主要特性
+
+- 📚 多版本Doris文档支持（2.0/2.1/3.0）
+- 🔍 基于Milvus的向量相似度搜索
+- 🤖 大模型驱动的自然语言问答
+- 🛡️ 内容安全审核机制
+- 🚀 生产级API服务支持
+- 📦 Docker容器化部署
+
+## 快速开始
+
+### 环境要求
+- Python 3.11+
+- Milvus 2.3+
+- Docker 20.10+
+
+### 安装步骤
+```bash
+# 克隆仓库
+git clone https://github.com/your-repo/doris-robot.git
+
+# 进入项目目录
+cd doris-robot
+
+# 安装依赖（基础版）
+pip install -r requirements.txt
+
+# 安装本地嵌入模型支持（可选）
+pip install -r requirements.txt[local-embeddings]
+```
+
+## 配置指南
+复制配置文件模板并修改：
+```bash
+cp config.json.template config.json
+```
+编辑`config.json`配置API密钥和Milvus连接信息。
+
+## 启动服务
+```bash
+# 开发模式
+python main.py
+
+# 生产模式
+docker-compose up -d
+```
 
 ## 功能特性
 
@@ -29,38 +74,6 @@ project_root/
 ├── plugins/                # 插件实现
 ├── tests/                  # 单元测试
 └── main.py                 # 主程序入口
-```
-
-## 快速开始
-
-### 环境要求
-- Python 3.11+
-- Milvus 2.3.x
-- Redis 6.2+（可选缓存）
-
-### 安装依赖
-```bash
-pip install -r requirements.txt
-```
-
-### 配置说明
-1. 初始化配置文件：
-```bash
-cp config/config.json.template config/config.json
-```
-
-2. 修改核心配置：
-```json
-{
-  "milvus": {
-    "host": "localhost",
-    "port": 19530
-  },
-  "deepseek": {
-    "api_key": "your_api_key",
-    "endpoint": "https://api.deepseek.com/v1"
-  }
-}
 ```
 
 ## 运行模式
