@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from pydantic import BaseModel, Field
 from src.data_loader.doris_loader import DorisLoader
 from src.qa.rag_engine import RAGEngine
@@ -9,6 +9,7 @@ import uvicorn
 import logging.handlers
 from src.moderation import ModerationService
 from settings import config
+from fastapi.responses import StreamingResponse
 
 logger = logging.getLogger(__name__)
 
@@ -24,23 +25,16 @@ class JiraProcessRequest(BaseModel):
 def create_app():
     app = FastAPI(title="Doris智能问答API")
     
-    # 设置日志级别
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    
-    # 控制台输出
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-    
-    # 文件输出（保留原有配置）
-    file_handler = logging.handlers.RotatingFileHandler(
-        'api.log',
-        maxBytes=1024*1024*100,
-        backupCount=5
+    # 统一日志配置（确保所有模块使用相同配置）
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - [%(process)d] %(name)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler()]
     )
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+    
+    # 禁用uvicorn的访问日志（避免干扰）
+    uvicorn_logger = logging.getLogger("uvicorn.access")
+    uvicorn_logger.propagate = False
     
     # 直接初始化RAG引擎实例
     rag_engine = RAGEngine()
@@ -71,42 +65,32 @@ def create_app():
             return {"code": 500, "message": "服务内部错误"}
 
     @app.get("/api/process/doc")
-    async def process_document(content: str):
-        """处理文档：加载、向量化和存储"""
-        try:
-            logger.info("初始化组件")
-            doris_loader = DorisLoader(config.doris_docs_path)
-            milvus_store = MilvusStore()
-            # 加载文档
-            logger.info("开始加载文档")
-            documents = doris_loader.load_documents()
-            if not documents:
-                raise ValueError("没有加载到任何文档")
-            logger.info(f"文档加载完成，共 {len(documents)} 个文档块")
-            
-            # 创建collection
-            collection_name = "doris_docs"
-            logger.info(f"创建集合: {collection_name}")
-            milvus_store.create_collection(collection_name)
-            
-            # 处理并存储文档
-            logger.info("开始处理文档向量化")
-            texts = [doc["content"] for doc in documents]
-            
-            # 异步调用（保持await但使用依赖注入的实例）
-            await rag_engine.batch_get_embeddings(
-                texts=texts,
-                documents=documents,
-                collection_name=collection_name,
-                batch_size=50,
-                concurrency=10
+    async def process_document(background_tasks: BackgroundTasks):
+        """复用现有文档处理流程"""
+        def process_task():
+            # 继承主线程日志配置
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - [%(process)d] %(name)s - %(levelname)s - %(message)s',
+                handlers=[logging.StreamHandler()]
             )
             
-            logger.info("文档处理完成")
+            loader = DorisLoader(config.doris_docs_path)
             
-        except Exception as e:
-            logger.error(f"文档处理失败: {str(e)}")
-            raise
+            def progress_callback(current, total):
+                logger.info(f"处理进度: {current}/{total} ({current/total:.1%})")
+            
+            try:
+                processed_count = loader.full_process(progress_callback)
+                logger.info(f"文档处理完成，共处理 {processed_count} 个文档")
+            except Exception as e:
+                logger.error(f"文档处理失败: {str(e)}")
+                raise
+            
+            return {"processed": processed_count}
+        
+        background_tasks.add_task(process_task)
+        return {"message": "文档处理已开始"}
 
     @app.get("/api/process/jira")
     def process_jira_data(full_refresh: bool = False):
@@ -131,7 +115,7 @@ def create_app():
 
     @app.get("/health")
     def health_check():
-        return {"status": "ok", "version": "2.0.0"}
+        return {"status": "ok"}
 
     @app.get("/test")
     def test():

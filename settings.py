@@ -197,4 +197,25 @@ class Settings:
         self.data = config._config
         
     def __getattr__(self, name):
-        return self.data.get(name) 
+        return self.data.get(name)
+
+class Config:
+    # 日志配置
+    logging_level = logging.INFO
+    milvus_log_level = logging.DEBUG  # 单独控制Milvus日志级别
+    
+    @property
+    def get_logging_config(self):
+        return {
+            "version": 1,
+            "loggers": {
+                "": {
+                    "level": self.logging_level,
+                    "handlers": ["console"]
+                },
+                "src.vectorstore.milvus_store": {
+                    "level": self.milvus_log_level,
+                    "propagate": False
+                }
+            }
+        } 

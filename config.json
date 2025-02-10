@@ -1,5 +1,5 @@
 {
-  "collection_name": "${DORIS_COLLECTION_NAME}",
+  "collection_name": "doris_docs_test",
   "timeout": 60,
   "max_question_length": 500,
   "sensitivity_check": true,
@@ -12,8 +12,8 @@
   "model_config": {
     "services": {
       "chat": {
-        "provider": "deepseek",
-        "model": "deepseek-chat",
+        "provider": "siliconflow",
+        "model": "deepseek-ai/DeepSeek-V3",
         "temperature": 0.2
       },
       "generation": {
@@ -27,30 +27,30 @@
         "temperature": 0.2
       },
       "moderation": {
-        "provider": "deepseek",
-        "model": "deepseek-chat",
+        "provider": "siliconflow",
+        "model": "deepseek-ai/DeepSeek-V3",
         "temperature": 0.2,
         "max_tokens": 800
       }
     },
     "providers": {
       "deepseek": {
-        "api_key": "${DEEPSEEK_API_KEY}",
+        "api_key": "sk-93bb8859ab49406aa55e6ef4a4de9f5a",
         "endpoint": "https://api.deepseek.com/v1"
       },
       "siliconflow": {
-        "api_key": "${SILICONFLOW_API_KEY}",
+        "api_key": "sk-acnznlkwdhbqbcijbosbzbbqrugbkyygaumptnlyugomgudn",
         "endpoint": "https://api.siliconflow.cn/v1"
       }
     }
   },
   "milvus": {
-    "host": "${MILVUS_HOST}",
-    "port": ${MILVUS_PORT}
+    "host": "www.freeoneplus.com",
+    "port": 19530
   },
-  "docs_path": "${DOCS_PATH}",
+  "docs_path": "docs_path",
   "data_paths": {
-    "doris_docs": "./doris_docs",
+    "doris_docs": "/Users/suyijia/Documents/code/doris-website",
     "jira_data": "./jira_data",
     "jira_attachments": "./jira_attachments"
   },

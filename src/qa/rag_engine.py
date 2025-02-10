@@ -5,6 +5,10 @@ from settings import config
 from src.moderation.moderation_service import ModerationService
 from src.clients.llm_client import LLMClients
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+import time
+import asyncio
+import openai
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -20,37 +24,50 @@ class RAGEngine:
         self.milvus_store = MilvusStore()
         self.moderation_service = ModerationService()
         self.chat_model = config.get_chat_model
+        self.max_retries = 100  # 最大重试次数
+        self.retry_delay = 1.0  # 初始重试延迟(秒)
         logger.info("RAG引擎初始化成功")
 
     def _get_truncated_embedding(self, text):
         """处理文本截断并生成嵌入"""
-        try:
-            # 添加详细日志
-            logger.debug(f"生成嵌入的文本长度: {len(text)}")
-            logger.debug(f"使用模型: {self.config.embedding_model}")
+        retry_count = 0
+        while True:
+            try:
+                # 添加详细日志
+                logger.debug(f"生成嵌入的文本长度: {len(text)}")
+                logger.debug(f"使用模型: {self.config.embedding_model}")
+                
+                # 预处理文本，移除多余空白
+                text = re.sub(r'\s+', ' ', text.strip())
+                
+                # 截断文本至8000字符（约对应8192 tokens）
+                max_length = 8000
+                if len(text) > max_length:
+                    logger.warning(f"文本长度超过限制，将截断至前{max_length}字符")
+                    text = text[:max_length]
+                
+                # 生成嵌入
+                response = self.clients.embedding.embeddings.create(
+                    model=self.config.embedding_model,
+                    input=text,
+                    timeout=60.0  # 添加超时控制
+                )
+                return response.data[0].embedding
             
-            # 预处理文本，移除多余空白
-            text = re.sub(r'\s+', ' ', text.strip())
-            
-            # 截断文本至8000字符（约对应8192 tokens）
-            max_length = 8000
-            if len(text) > max_length:
-                logger.warning(f"文本长度超过限制，将截断至前{max_length}字符")
-                text = text[:max_length]
-            
-            # 生成嵌入
-            response = self.clients.embedding.embeddings.create(
-                model=self.config.embedding_model,
-                input=text,
-                timeout=60.0  # 添加超时控制
-            )
-            return response.data[0].embedding
-            
-        except Exception as e:
-            logger.error(f"嵌入生成失败详情: {str(e)}")
-            logger.error(f"请求模型: {self.config.embedding_model}")
-            logger.error(f"服务端点: {self.clients.embedding.base_url}")
-            raise
+            except openai.InternalServerError as e:
+                retry_count += 1
+                if retry_count >= self.max_retries:
+                    logger.error(f"达到最大重试次数 {self.max_retries}，放弃处理")
+                    raise
+                
+                delay = self.retry_delay * (2 ** (retry_count - 1))  # 指数退避
+                logger.warning(f"服务过载，第 {retry_count}/{self.max_retries} 次重试，{delay:.1f}秒后重试...")
+                time.sleep(delay)
+            except Exception as e:
+                logger.error(f"嵌入生成失败: {str(e)}")
+                logger.error(f"请求模型: {self.config.embedding_model}")
+                logger.error(f"服务端点: {self.clients.embedding.base_url}")
+                raise
 
     def get_embedding(self, text):
         """生成嵌入"""
@@ -236,3 +253,93 @@ class RAGEngine:
         except Exception as e:
             logger.error(f"审核查询失败: {str(e)}")
             return True 
+
+    async def batch_get_embeddings(self, texts: list, documents: list, collection_name: str, batch_size=50, concurrency=10):
+        """批量获取嵌入并存储到Milvus"""
+        try:
+            logger.info(f"开始批量处理 {len(texts)} 个文本块")
+            
+            # 分批处理
+            for i in range(0, len(texts), batch_size):
+                try:
+                    batch_texts = texts[i:i+batch_size]
+                    batch_docs = documents[i:i+batch_size]
+                    
+                    # 获取嵌入
+                    embeddings = await self._async_get_embeddings(batch_texts)
+                    
+                    # 准备存储数据
+                    records = []
+                    for doc, emb in zip(batch_docs, embeddings):
+                        doc_id = hashlib.md5(doc["url"].encode()).hexdigest()  # 生成唯一ID
+                        records.append({
+                            "id": doc_id,
+                            "vector": emb,
+                            "text": doc["content"],
+                            "version": doc["version"],
+                            "url": doc["url"],
+                            "is_community": doc.get("is_community", False)
+                        })
+                    
+                    # 批量插入
+                    self.milvus_store.batch_insert(collection_name, records)
+                    
+                    logger.info(f"已处理 {i + len(batch_texts)}/{len(texts)} 个文档块")
+                except Exception as e:
+                    logger.error(f"跳过无法处理的批次 {i}-{i+batch_size}")
+                    continue  # 继续处理后续批次
+            
+            logger.info("批量嵌入处理完成")
+            
+        except Exception as e:
+            logger.error(f"批量处理失败: {str(e)}")
+            raise
+
+    async def _async_get_embeddings(self, texts: list) -> list:
+        """异步获取嵌入"""
+        embeddings = []
+        for text in texts:
+            retry_count = 0
+            while True:
+                try:
+                    emb = self.get_embedding(text)
+                    embeddings.append(emb)
+                    break
+                except openai.InternalServerError:
+                    retry_count += 1
+                    if retry_count >= self.max_retries:
+                        logger.error(f"文本处理达到最大重试次数: {text[:50]}...")
+                        raise
+                    await asyncio.sleep(self.retry_delay * (2 ** (retry_count - 1)))
+        return embeddings
+
+    async def batch_process_documents(self, documents: list):
+        """批量处理文档嵌入"""
+        try:
+            texts = [doc["content"] for doc in documents]
+            embeddings = []
+            
+            # 分批处理
+            batch_size = 50
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i+batch_size]
+                embeddings.extend(self.clients.embedding.embeddings.create(
+                    model=self.config.embedding_model,
+                    input=batch
+                ).data)
+                
+            # 存储到Milvus
+            records = []
+            for doc, emb in zip(documents, embeddings):
+                records.append({
+                    "vector": emb.embedding,
+                    "text": doc["content"],
+                    "url": doc["url"],
+                    "version": doc["version"]
+                })
+            
+            self.milvus_store.batch_insert("doris_docs", records)
+            
+        except Exception as e:
+            logger.error(f"批量处理失败: {str(e)}")
+            raise 

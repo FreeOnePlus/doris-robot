@@ -15,10 +15,9 @@ class MilvusStore:
             self.port = config.milvus_port
             self.vector_dim = config.vector_dimension
             logger.info(f"连接Milvus服务器: {self.host}:{self.port}")
-            self.conn = connections.connect(
-                host=self.host,
-                port=self.port
-            )
+            connections.connect(host=self.host, port=self.port)
+            self.connection = connections
+            self.client = connections  # 或者使用具体的客户端实例
             logger.info("Milvus连接成功")
         except Exception as e:
             logger.error(f"连接Milvus服务器失败: {str(e)}")
@@ -48,10 +47,14 @@ class MilvusStore:
                 FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=self.vector_dim),
                 FieldSchema(name="version", dtype=DataType.VARCHAR, max_length=10),
                 FieldSchema(name="url", dtype=DataType.VARCHAR, max_length=1024),
-                FieldSchema(name="is_community", dtype=DataType.BOOL)
+                FieldSchema(name="is_community", dtype=DataType.BOOL),
             ]
             
-            schema = CollectionSchema(fields=fields, description=f"Collection for {collection_name}")
+            schema = CollectionSchema(
+                fields=fields, 
+                description=f"Collection for {collection_name}",
+                enable_dynamic_field=True
+            )
             collection = Collection(name=collection_name, schema=schema)
             
             # 创建索引
@@ -446,4 +449,44 @@ class MilvusStore:
             
         except Exception as e:
             logger.error(f"数据更新失败: {str(e)}")
+            raise
+
+    def batch_insert(self, collection_name: str, data: list):
+        """批量插入数据"""
+        try:
+            # 验证数据格式
+            required_fields = ["id", "text", "vector", "version", "url"]
+            for item in data:
+                if not all(field in item for field in required_fields):
+                    logger.error(f"缺失必要字段: {item}")
+                    raise ValueError("数据格式不完整")
+            
+            logger.debug(f"准备插入数据示例: {data[0] if data else '空数据'}")
+            
+            from pymilvus import Collection
+            collection = Collection(name=collection_name)
+            
+            total = len(data)
+            batch_size = 50
+            inserted_count = 0
+            
+            for i in range(0, total, batch_size):
+                batch = data[i:i+batch_size]
+                try:
+                    result = collection.insert(batch)
+                    inserted_count += len(result.primary_keys)
+                    logger.info(f"✅ 成功插入批次 {i//batch_size+1} (文档数: {len(batch)})")
+                    logger.debug(f"插入批次示例ID: {batch[0]['id']}")
+                except Exception as e:
+                    logger.error(f"❌ 插入批次 {i//batch_size+1} 失败: {str(e)}")
+                    logger.debug(f"失败批次数据示例: {batch[:1]}")
+                    continue
+                
+                processed = min(i + batch_size, total)
+                logger.info(f"文档处理进度: {processed}/{total} ({processed/total:.1%})")
+            
+            logger.info(f"插入完成 成功/总数: {inserted_count}/{total} (成功率: {inserted_count/total:.1%})")
+            return inserted_count
+        except Exception as e:
+            logger.error(f"批量插入失败: {str(e)}")
             raise 

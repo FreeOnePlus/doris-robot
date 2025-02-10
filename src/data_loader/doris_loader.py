@@ -2,33 +2,48 @@ import os
 import logging
 from glob import glob
 import re
+from typing import List
+from pathlib import Path
+from ..vectorstore.milvus_store import MilvusStore
+from settings import config
+from ..qa.rag_engine import RAGEngine
+import hashlib
 
 logger = logging.getLogger(__name__)
 
 class DorisLoader:
-    def __init__(self, docs_path):
+    def __init__(self, docs_path: Path):
         """
         初始化文档加载器
         Args:
             docs_path: doris-website项目的根路径
         """
         self.docs_path = docs_path
-        self.versions = ['2.0', '2.1', '3.0', 'dev']
+        self.versions = ["2.0", "2.1", "3.0"]  # 支持的版本列表
+        self.latest_version = "3.0"
+        self.rag_engine = RAGEngine()  # 初始化RAG引擎
         logger.info(f"初始化文档加载器，文档路径: {docs_path}")
         
-    def _parse_version(self, url):
+    def _should_hide_version(self, version: str) -> bool:
+        """判断是否需要隐藏版本号"""
+        return version == "2.1"
+
+    def _parse_version(self, url: str) -> str:
         """从URL解析版本号"""
-        if '/zh-CN/docs/' in url:
-            path_parts = url.split('/zh-CN/docs/')[1].split('/')
-            version_part = path_parts[0].replace('version-', '')
-            
-            # 处理特殊路径
-            if version_part == 'sql-manual':
-                return '2.1' if '2.1' in url else 'unknown'
-            
-            # 验证版本有效性
-            return version_part if version_part in self.versions else 'unknown'
-        return 'unknown'
+        # 匹配类似 /docs/3.0/ 或 /version-3.0/ 的路径
+        version_pattern = r'/(?:docs/|version-)(\d+\.\d+)/'
+        match = re.search(version_pattern, url)
+        if match:
+            return match.group(1)
+        # 默认返回最新版
+        return self.latest_version
+
+    def _generate_clean_url(self, url: str, version: str) -> str:
+        """生成清理后的URL"""
+        if version == "2.1":
+            # 移除版本路径
+            return re.sub(r'/docs/\d+\.\d+/', '/docs/', url)
+        return url
 
     def load_documents(self):
         """加载所有Doris文档并按段落分割"""
@@ -164,7 +179,7 @@ class DorisLoader:
             chunks = self._split_by_headings(content, file_path)
             
             # 生成文档块元数据
-            base_url = self._generate_doc_url(self.docs_path, file_path, version)
+            base_url = self._generate_doc_url(file_path, version)
             logger.debug(f"处理文件 {file_path}，版本: {version}，社区文档: {is_community}")
             
             # 新增版本校验
@@ -198,7 +213,7 @@ class DorisLoader:
             rel_path = os.path.relpath(file_path, self.docs_path)
             
             # 生成URL
-            url = self._generate_doc_url(self.docs_path, file_path, version)
+            url = self._generate_doc_url(file_path, version)
             
             return {
                 "content": cleaned_content,
@@ -234,25 +249,61 @@ class DorisLoader:
         logger.info(f"处理完成 {file_count} 个文件，生成 {len(chunks)} 个文档块")
         return chunks
 
-    def _generate_doc_url(self, base_path, file_path, version):
-        """生成正确的文档URL"""
-        # 示例路径转换：
-        # /path/to/docs/i18n/zh-CN/docusaurus-plugin-content-docs/current/data-operate/import.md -> 
-        # https://doris.apache.org/zh-CN/docs/dev/data-operate/import
-        rel_path = os.path.relpath(file_path, base_path)
-        path_without_ext = os.path.splitext(rel_path)[0]
+    def _generate_doc_url(self, file_path: str, version: str) -> str:
+        """生成文档访问URL"""
+        # 将文件系统路径转换为web路径
+        rel_path = os.path.relpath(file_path, self.docs_path)
+        web_path = f"/{rel_path.replace('.md', '')}"
         
-        # 移除路径前缀
-        patterns = [
-            r'i18n/zh-CN/docusaurus-plugin-content-docs/current/',
-            r'i18n/zh-CN/docusaurus-plugin-content-docs/version-[^/]+/',
-            r'i18n/zh-CN/docusaurus-plugin-content-docs-community/'
-        ]
+        if self._should_hide_version(version):
+            # 移除版本路径段
+            web_path = re.sub(r'/\d+\.\d+/', '/', web_path)
+            return web_path
         
-        for pattern in patterns:
-            path_without_ext = re.sub(pattern, '', path_without_ext)
+        # 保持其他版本的路径结构
+        return web_path 
+
+    def full_process(self, progress_callback=None):
+        """完整的文档处理流程"""
+        documents = self.load_documents()
         
-        if version == '2.1':
-            version = ''
+        # 创建集合
+        milvus = MilvusStore()
+        milvus.create_collection("doris_docs")
+        
+        # 批量插入
+        total = len(documents)
+        if progress_callback:
+            progress_callback(0, total)
+        
+        records = []
+        for i, doc in enumerate(documents):
+            # 验证必要字段
+            required_fields = ["content", "version", "url"]
+            if not all(field in doc for field in required_fields):
+                logger.error(f"文档数据不完整: {doc}")
+                continue
             
-        return f"https://doris.apache.org/zh-CN/docs/{version}/{path_without_ext}" 
+            doc_id = hashlib.md5(doc["url"].encode()).hexdigest()
+            records.append({
+                "id": doc_id,
+                "text": doc["content"],
+                "vector": self.rag_engine.get_embedding(doc["content"]),
+                "version": doc["version"],
+                "url": doc["url"],
+                "is_community": doc.get("is_community", False)
+            })
+            
+            # 每处理50个文档触发一次进度更新
+            if progress_callback and (i % 50 == 0 or i == total-1):
+                progress_callback(i+1, total)
+        
+        try:
+            logger.info(f"开始插入 {len(records)} 条数据到Milvus")
+            inserted_count = milvus.batch_insert("doris_docs", records)
+            logger.info(f"数据插入完成，成功插入 {inserted_count} 条")
+        except Exception as e:
+            logger.error(f"最终数据插入失败: {str(e)}")
+            raise
+        
+        return total 
