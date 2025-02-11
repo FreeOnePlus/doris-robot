@@ -66,6 +66,10 @@ class ConfigManager:
         return Path(self._config["data_paths"]["doris_docs"])
     
     @property
+    def doc_collection_name(self) -> str:
+        return self._config["collection_name"]
+    
+    @property
     def jira_docs_path(self) -> Path:
         return Path(self._config["data_paths"]["jira_docs"])
     

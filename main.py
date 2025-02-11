@@ -29,7 +29,7 @@ async def process_documents():
         logger.info(f"文档加载完成，共 {len(documents)} 个文档块")
         
         # 创建collection
-        collection_name = "doris_docs"
+        collection_name = config.doc_collection_name
         logger.info(f"创建集合: {collection_name}")
         milvus_store.create_collection(collection_name)
         

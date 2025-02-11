@@ -38,7 +38,7 @@ def create_app():
     
     # 直接初始化RAG引擎实例
     rag_engine = RAGEngine()
-    collection_name = "doris_docs"
+    collection_name = config.doc_collection_name
 
     # 独立初始化审核服务（使用配置）
     moderation = ModerationService()

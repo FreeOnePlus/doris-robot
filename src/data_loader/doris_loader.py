@@ -269,7 +269,7 @@ class DorisLoader:
         
         # 创建集合
         milvus = MilvusStore()
-        milvus.create_collection("doris_docs")
+        milvus.create_collection(config.doc_collection_name)
         
         # 批量插入
         total = len(documents)

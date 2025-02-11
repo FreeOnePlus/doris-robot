@@ -18,6 +18,10 @@ class UnifiedLLMClient:
             'siliconflow': OpenAI(
                 api_key=config.llm_api_key(provider="siliconflow"),
                 base_url=config.llm_endpoint(provider="siliconflow")
+            ),
+            'bailian': OpenAI(
+                api_key=config.llm_api_key(provider="bailian"),
+                base_url=config.llm_endpoint(provider="bailian")
             )
         }
 
@@ -26,6 +30,8 @@ class UnifiedLLMClient:
             return self.clients['deepseek']
         elif 'siliconflow' in model_name:
             return self.clients['siliconflow']
+        elif 'bailian' in model_name:
+            return self.clients['bailian']
         else:
             return self.clients['custom']
 
